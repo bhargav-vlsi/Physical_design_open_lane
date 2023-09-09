@@ -81,6 +81,159 @@ OpenLane Container (2264b12):/openlane$ ./flow.tcl -interactive
 ![openlane_invoke](./Images/openlane_invoke.png)
 
 
+Then prepare the design for RTl-GDS flow and run a synthesis command for picorv32a design as a sample. The picorv32a is present in design folder of openlane along with few other sample designs.
+```
+prep -design picorv32a
+run_synthesis
+```
+
+Then we review result of synthesis flow. A folder by the name runs is created in picorv32a folder which contains folders related to ASIC flow like placement, synthesis, routing etc. We access report folder os synthesis and analyze the result as follows.
+
+![picorv32a_dff_count](./Images/picorv32a_dff_count.png)
+
+
+</details>
+
+<details>
+<summary>DAY-2</summary>
+
+### Utilization factor and aspect ratio
+
+Core is where actual circuit netlist is placed and die just encapsulates the core. We are interested to understand area, utilization factor and aspect ratio of core.
+
+If we have any logical circuit, we assume it be a square based area, we try to determine the area of core where we can fit in out circuit. 
+
+Area is simpliy the sum of product of width and height of standard cells and flip flops. 
+
+
+Utilization factor is ratio of area occupied by netlist to total area of core. From this we find that, area of netlist and core is not always same. If this ratio is 1, then it is 100% utilization of core and no wastage of area.
+
+```
+Utilization factor = Area occupied by circuit / Area of core
+```
+
+Aspect ratio is ratio of height to width of core. If this ratio is 1, then is is means that core is square in shape.
+```
+Aspect ratio = Height of core / Width of core
+```
+
+### Concept of pre-placed cells
+
+Let's consider that we have a circuit which performs a certain function in top level module. But, we will separate them into multiple blocks where interconnect each of them again through wires. The importance of this concept lies in the fact that we may have a functionality being implemented in multiple plcaes, we need not separately implement. We implement this block once and have multiple copies used for better & faster implementation. Some of these blocks found in market are memory, multiplexers, comparators and many more. These are called as pre-placed blocks.
+
+![pre_placed_cells](./Images/pre_placed_cells.png)
+
+### Decoupling capacitor
+
+Decoupling capacitors are used to maintain stable supply to internal digita circuits. Without these, due to presence of wire resistance & inductance, the voltage represented by logic 1  or 0 might not be achieved due to noise margin of circuit. We want the voltage levels to lie within noise margin to able to distinguish between logic 1 & 0.
+
+### Power planning
+
+Power planning in chip design is an important aspect. Let us consider that we have circuit with on power supply. We have used decipuling capacitors for input ports to avoid destrcution of voltage levels. But is not possible to add these capacitors everywhere as it increases the size & feasible solution. Instead we increase the power supply given to chip so that particular logical part of circuit receives power from nearest power rail. Without this power planning, ground bounce where many points are discharging to single ground and voltage level of ground increases beyond noise marging causes ambiguity in logic level. Same concept applies to voltage drop where power voltage drops if many points in circuit draw power at same time.
+
+### Pin placement
+Pin placement refers to deciding input and output ports location on core. It decides delay and amount of wire requried to connect blocks. So it decides size of pins to provide power signal strength. We place these pins between space die and core border. This space does not contain any other cells of circuit.
+
+
+### Floorplan of picorv32a
+
+We perform floorplanning we use following command.
+```
+run_floorplan
+```
+
+![run_floorplan](./Images/run_floorplan.png)
+
+Then we go to results folder of floorplan and open floorplan file .def in magic tool as shown below.
+```
+magic -T <techfile> lef read <lef_file> def read <def-file>
+```
+
+![picorv32a_floorplan](./Images/picorv32a_floorplan.png)
+
+### Netlist binding and initial place design
+
+After we design the system with netlist consisting of various cells, we consider these cells. These cells are taken from library where size & delay and other details associated with each cell. We take the floorplan performed in previous step for placement & routing. We place standard cells in a way similar to netlist like placing a cell closer to input port and placing another cell closer to output to have lesser delay. This is known as initial placement.
+
+
+### Optimized placement using estimated wire-length and capacitance
+
+In this stage, we estimate length & capacitance of wires to determine the optimized placement of cells. So if we have not maintained signal integrity, then we use buffers to reduce wire length and capacitance and have optimized placement.
+
+### Placement step in openlane
+
+Placement occurs in two stages: GLobal & detailed placement.
+Global Placement: It finds optimal position for all cells which may not be legal and cells may overlap. Optimization is done through reduction of half parameter wire length.
+
+Detailed Placement: It alters the position of cells post global placement so as to legalise them.
+
+We peform placement in openlane as follows:
+```
+run_placement
+```
+
+![run_placement](./Images/run_placement.png)
+
+![picorv32a_placement](./Images/picorv32a_placement.png)
+
+### Cell design
+
+Standard cell design flow involves the following:
+
+-Inputs: PDKs, DRC & LVS rules, SPICE models, libraries, user-defined specifications.
+
+-Design steps: Circuit design, Layout design (Art of layout Euler's path and stick diagram), Extraction of parasitics, Characterization (timing, noise, power).
+
+-Outputs: CDL (circuit description language), LEF, GDSII, extracted SPICE netlist (.cir), timing, noise and power .lib file
+
+### Standard cell characterisation
+
+Standard cell characterization follows below step:
+
+Logic (Boolean function)
+
+Schematic (Connection pins only)
+
+Netlist (Internal circuit made of transistors)
+
+Netlist with parasitics
+
+Physical Layout
+
+Timing (Delays, hold and setup times, ...)
+
+Power
+
+Noise
+
+We use software called GUNA to perform above characterization steps.
+
+### Timing characterization parameters
+
+We have timing threshold definitions as follows:
+
+slew_low_rise_thr	20% value
+
+slew_high_rise_thr	80% value
+
+slew_low_fall_thr	20% value
+
+slew_high_fall_thr	80% value
+
+in_rise_thr	        50% value
+
+in_fall_thr	        50% value
+
+out_rise_thr	        50% value
+
+out_fall_thr	        50% value
+
+
+Propogation delay: Time difference between input waveform & output waveform crossing 50% of reference value.
+Poor choice of threshold value can lead to negative delays.
+
+
+
 </details>
 
 
@@ -96,5 +249,6 @@ https://github.com/The-OpenROAD-Project/OpenLane
 
 https://vsdiat.com/
 
+https://github.com/Devipriya1921/Physical_Design_Using_OpenLANE_Sky130
 
 </details>
