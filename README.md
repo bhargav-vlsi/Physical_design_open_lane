@@ -233,7 +233,373 @@ Propogation delay: Time difference between input waveform & output waveform cros
 Poor choice of threshold value can lead to negative delays.
 
 
+</details>
 
+<details>
+<summary>DAY-3</summary>
+
+
+### IO placer revision
+
+![equi_pin_placement](./Images/equi_pin_placement.png)
+
+Previously, we used equidistant value for IO pins in layout. Now we want to change to some other format, we edit environment variable and run floorplan flow again as follows:
+
+```
+set ::env(FP_IO_MODE) 2
+```
+
+![different_io](./Images/different_io.png)
+
+### Spice deck
+
+A SPICE deck includes information about the following:
+
+Model description
+
+Netlist description
+
+Component connectivity
+
+Component values
+
+Capacitance load
+
+Nodes
+
+Simulation type and parameters
+
+Libraries included
+
+Following is Spice netlist for inverter.
+
+![inverter](./Images/inverter.png)
+
+```
+.title CMOS inverter
+.include 
+M1 out in vdd vdd pmos w=0.375u l=0.25u
+M2 out in 0 0 nmos w=0.375u l=0.25u
+cload out 0 10f
+Vdd vdd 0 2.5
+Vin in 0 2.5
+
+**control cmds
+.op
+.dc Vin 0 2.5 0.05
+.plot v(out) vs v(in)
+.end
+```
+
+We change width of pmos to 0.9375 then we get following characteristics with shifted threshold.
+
+
+
+We compare as follows:
+
+| Inverter wp=0.375 | Inverter wp=0.9375 |
+| --- | --- |
+| ![inverter_dc](./Images/inverter_dc.png) | ![inverter2_dc](./Images/inverter2_dc.png) |
+
+
+
+### Switching characteristics
+
+In this section, we try to understand switching characteristics ie rise delay & fall delay of inverter.
+
+We use previous netlist and provide a pulse as input to determine rise & fall delay.
+
+| PMOS W/L ratio | NMOS W/L ratio | Rise delay | Fall delay |
+| --- | --- | --- | --- |
+| Wp/Lp | Wn/Ln | 100.97ps | 49.61ps |
+| Wp/Lp | 2Wn/Ln | 109.88ps | 32.03ps |
+| Wp/Lp | 3Wn/Ln | 119.15ps | 23.721ps |
+
+### Inverter layout
+
+We git clone vsdstdcelldesign github repository for inverter layout.
+```
+git clone https://github.com/nickson-jose/vsdstdcelldesign.git
+```
+![inverter_layout](./Images/inverter_layout.png)
+
+### 16 Fabrication of Mask CMOS
+The following steps comprise the 16-mask CMOS process:
+
+choosing a substrate: separating the substrate/body material.
+
+Making a transistor's active region: SiO2 and Si3N4 etching and deposition, followed by photolithography, are used to isolate between active area pockets.
+
+Ion implanation for the creation of the N- and P-wells: boron for the P-well and phosphorus for the N-well.
+
+Photolithography processes are used to produce the NMOS and PMOS gates at the gate terminal.
+
+LDD formation: LDD developed to counteract the hot electron effect.
+
+In order to prevent channelling during implants, screen oxide is applied before aresenic is implanted, followed by annealing.
+
+Local connection formation: HF etching is used to remove screen oxide. Ti is deposited for low-resistance connections.
+
+Planarization of higher level metals using CMP, followed by TiN and Tungsten deposition. Top SiN layer for chip protection.
+
+### Spice extraction & simulation
+
+In this section, we will verify the logic implemented by layout by extracting spice netlist and performing simulation in ngspice.
+
+In Tckon window of magic, we use following commands
+```
+extract all
+ext2spice cthresh 0 rthresh 0
+ext2spice
+```
+We have two files sky130_inv.ext & sky130_inv.spice created.
+
+![ext2spice](./Images/ext2spice.png)
+
+
+We perform ngspice simulation for extracted netlist.
+
+Netlist:
+```
+* SPICE3 file created from sky130_inv.ext - technology: sky130A
+
+.option scale=0.01u
+.include ./libs/pshort.lib
+.include ./libs/nshort.lib
+
+//.subckt sky130_inv A Y VPWR VGND
+M1000 Y A VPWR VPWR pshort_model.0 w=37 l=23
++  ad=1443 pd=152 as=1517 ps=156
+M1001 Y A VGND VGND nshort_model.0 w=35 l=23
++  ad=1435 pd=152 as=1365 ps=148
+
+VDD VPWR 0 3.3v
+VSS VGND 0 0v
+Va A VGND PULSE (0 3.3 0 0.1n 0.1n 2n 4n)
+
+C0 VPWR A 0.07fF
+C1 VPWR Y 0.11fF
+C2 Y A 0.05fF
+C3 Y VGND 2fF
+C4 VPWR VGND 0.59fF
+.end
+```
+
+```
+ngspice sky130_inv.spice
+tran 1n 20n
+plot v(y) v(a)
+```
+![layout_simulation](./Images/layout_simulation.png)
+
+We calculate Rise time, fall time, rise delay, fall delay & propogation delay.
+
+Rise time: 63.44ps
+Fall time: 42.68ps
+Rise delay: 60.46ps
+Fall delay: 25.58ps
+
+### DRC violations
+
+We try to understand DRC violations through examples.
+Download sample magic layout files from following website.
+
+```
+wget http://opencircuitdesign.com/open_pdks/archive/drc_tests.tgz
+tar xfz drc_tests.tgz
+```
+
+Now, open sample file as shown
+```
+magic -d XR met3.mag
+```
+
+Below is rules for me3 layer.
+
+![rules](./Images/rules.png)
+
+We use 'drc_why' command errors in layout as shown.
+
+![m3_drc](./Images/m3_drc.png)
+
+We use following commands to see metal cut as shown.
+
+```
+cif see VIA2
+```
+
+### Fixing poly.9 error in sky130A.tech file - lab
+
+Open the poly.mag file in magic tool.
+
+```
+magic -d XR poly.mag
+```
+
+![poly9_before](./Images/poly9_before.png)
+
+We find that distance between regular polysilicon & poly resistor should be 22um but it is showing 17um and still no errors . We should go to sky130A.tech file and modify as follows to detect this error.
+
+In line 
+```
+spacing npres *nsd 480 touching_illegal \
+	"poly.resistor spacing to N-tap < %d (poly.9)"
+```
+
+change to 
+
+```
+spacing npres allpolynonres 480 touching_illegal \
+	"poly.resistor spacing to N-tap < %d (poly.9)"
+```
+
+
+Also,
+
+```
+spacing xhrpoly,uhrpoly,xpc alldiff 480 touching_illegal \
+
+	"xhrpoly/uhrpoly resistor spacing to diffusion < %d (poly.9)"
+```
+change to
+
+```
+spacing xhrpoly,uhrpoly,xpc allpolynonres 480 touching_illegal \
+
+	"xhrpoly/uhrpoly resistor spacing to diffusion < %d (poly.9)"
+```
+
+Again we load poly.mag file we find that it is detecting this erroe with DRC errors increased to 35 from 32.
+
+![poly9_after](./Images/poly9_after.png)
+
+</details>
+
+
+<details>
+<summary>DAY-4</summary>
+
+### Converting grid info to track info
+
+The requirement of ports is mentioned in track.info as shown below.
+
+```
+li1 X 0.23 0.46
+li1 Y 0.17 0.34
+met1 X 0.17 0.34
+met1 Y 0.17 0.34
+met2 X 0.23 0.46
+met2 Y 0.23 0.46
+met3 X 0.34 0.68
+met3 Y 0.34 0.68
+met4 X 0.46 0.92
+met4 Y 0.46 0.92
+met5 X 1.70 3.40
+met5 Y 1.70 3.40
+```
+Before convergence, we grid as follows as:
+
+![before_grid](./Images/before_grid.png)
+
+To ensure that ports lie on the intersection point, the grid spacing in Magic (tkcon) must be changed to the li1 X and li1 Y values. After providing the command, we have following:
+```
+grid 0.46um 0.34um 0.23um 0.17um
+```
+
+![after_grid](./Images/after_grid.png)
+
+### Conversion of magic layout to standard cell LEF file
+
+Extraction of the LEF file for the cell comes next when the layout is completed. To help the placer and router tool, specific characteristics and definitions must be defined for the cell's pins. Ports are the macro's declared PINs, and in LEF files, a cell containing ports is written as a macro cell. Our goal is to extract LEF in a predetermined format from a configuration (in this case, a straightforward CMOS inverter). The first step is to define each port and assign the appropriate class and use characteristics to each port.
+
+Below are steps to define a port :
+
+First, open the.mag file for the design in the Magic Layout window. Next, select Edit >> Text to bring up a dialogue window. Use locali for port y & a, use metal 1 for vdd & gnd as shown in figures below.
+
+![port_a](./Images/port_a.png)
+
+![port_y](./Images/port_y.png)
+
+![port_vdd](./Images/port_vdd.png)
+
+![port_gnd](./Images/port_gnd.png)
+
+
+Define the purpose of ports as follows in tkcon window:
+
+```
+port A class input
+port A use signal
+
+port Y class output
+port Y use signal
+
+port VPWR class inout
+port VPWR use power
+
+port VGND class inout
+port VPWR use ground
+```
+
+We generate lef file by command:
+```
+lef write <name>
+```
+This generates sky130_vsdinv.lef file.
+
+### Steps to include custom cell in ASIC design
+
+We have created a custom standard cell in previous steps of an inverter. Copy lef file, sky130_fd_sc_hd_typical.lib, sky130_fd_sc_hd_slow.lib & sky130_fd_sc_hd_fast.lib to src folder of picorv32a from libs folder vsdstdcelldesign. Then modify the condif.tcl as follows.
+
+```
+
+# Design
+set ::env(DESIGN_NAME) "picorv32a"
+
+set ::env(VERILOG_FILES) "$::env(DESIGN_DIR)/src/picorv32a.v"
+
+set ::env(CLOCK_PORT) "clk"
+set ::env(CLOCK_NET) $::env(CLOCK_PORT)
+
+set ::env(GLB_RESIZER_TIMING_OPTIMIZATIONS) {1}
+
+set ::env(LIB_SYNTH) "$::env(OPENLANE_ROOT)/designs/picorv32a/src/sky130_fd_sc_hd__typical.lib"
+set ::env(LIB_SLOWEST) "$::env(OPENLANE_ROOT)/designs/picorv32a/src/sky130_fd_sc_hd__slow.lib"
+set ::env(LIB_FASTEST) "$::env(OPENLANE_ROOT)/designs/picorv32a/src/sky130_fd_sc_hd__fast.lib"
+set ::env(LIB_TYPICAL) "$::env(OPENLANE_ROOT)/designs/picorv32a/src/sky130_fd_sc_hd__typical.lib"
+
+set ::env(EXTRA_LEFS) [glob $::env(OPENLANE_ROOT)/designs/$::env(DESIGN_NAME)/src/*.lef]
+
+set filename $::env(DESIGN_DIR)/$::env(PDK)_$::env(STD_CELL_LIBRARY)_config.tcl
+if { [file exists $filename] == 1} {
+	source $filename
+}
+```
+
+To integrate standard cell in openlane flow, perform following commands:
+
+```
+set lefs [glob $::env(DESIGN_DIR)/src/*.lef]
+add_lefs -src $lefs
+```
+
+### Delay tables
+
+We observe that the buffer we insert to maintain signal integrity has some constraints. We observe that size of buffer in every level should have same size and have different delays depending on load driven by them. So VLSI engineers came up with concept of delay tables which consists of 2D array of values input slew & load capacitance defined for cell for different sizes. These delay tables became timing models. The algorithm takes these values and computes delay values. If delay is not available directly, it takes nearest data and determines through extrapolation.
+
+![delay_table](./Images/delay_table.png)
+
+### Openlane steps with custom standard cell
+
+We perform synthesis and found that it has positive slack and met timing constraints.
+
+We perform floorplan and find out custom cell included as follows.
+
+![custom_cell_floorplan](./Images/custom_cell_floorplan.png)
+
+We perform placement step as well.
+
+![custom_cell_layout](./Images/custom_cell_layout.png)
 </details>
 
 
@@ -250,5 +616,7 @@ https://github.com/The-OpenROAD-Project/OpenLane
 https://vsdiat.com/
 
 https://github.com/Devipriya1921/Physical_Design_Using_OpenLANE_Sky130
+
+https://github.com/nickson-jose/vsdstdcelldesign
 
 </details>
