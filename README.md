@@ -428,6 +428,8 @@ We use following commands to see metal cut as shown.
 cif see VIA2
 ```
 
+![m3_metal_cut](./Images/m3_metal_cut.png)
+
 ### Fixing poly.9 error in sky130A.tech file - lab
 
 Open the poly.mag file in magic tool.
