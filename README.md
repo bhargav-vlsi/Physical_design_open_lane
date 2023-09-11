@@ -593,7 +593,7 @@ We observe that the buffer we insert to maintain signal integrity has some const
 
 ### Openlane steps with custom standard cell
 
-We perform synthesis and found that it has positive slack and met timing constraints.
+We perform synthesis and found that it has negative slack and met timing constraints.
 
 We perform floorplan and find out custom cell included as follows.
 
@@ -602,6 +602,68 @@ We perform floorplan and find out custom cell included as follows.
 We perform placement step as well.
 
 ![custom_cell_layout](./Images/custom_cell_layout.png)
+
+### Setup & hold time concepts
+
+It is here that we introduce SETUP and HOLD time. Setup time is defined as the minimum amount of time before the clock’s active edge that the data must be stable for it to be latched correctly. Any violation may cause incorrect data to be captured, which is known as setup violation.
+
+![setup_time](./Images/setup_time.png)
+
+Hold time is defined as the minimum amount of time after the clock’s active edge during which data must be stable. Violation in this case may cause incorrect data to be latched, which is known as a hold violation. Note that setup and hold time is measured with respect to the active clock edge only.
+
+![hold_time](./Images/hold_time.png)
+
+### Clock jitter concept
+
+Circuitry in the clock generator, noise, changes in the power supply, interference from surrounding circuitry, etc. are the usual causes of clock jitter. The design margin called for in the timing closure specification includes jitter as a factor.
+
+
+Period jitter is the difference between a clock signal's cycle time and the ideal period over a large number of randomly chosen cycles, such as 10K cycles. The clock period deviation can be supplied as either an average value across the chosen cycles (RMS value) or as the difference between the chosen group's highest and minimum deviations (peak-to-peak period jitter).
+
+The difference between two consecutive clock cycles across a random number of clock cycles is known as cycle to cycle jitter, or C2C. (say 10K). Typically, this is described as the peak value for the random group.By doing so, the high frequency jitter can be calculated.
+
+The effect being measured in the frequency domain is phase noise. In the frequency domain, phase noise is the representation of fast, short-lived, random variations in the phase of the waveform. These fluctuations can be converted into jitter values for digital design.
+
+![clock_jitter](./Images/clock_jitter.png)
+
+![timing](./Images/timing.png)
+
+After putting command
+```
+set ::env(SYNTH_MAX_FANOUT) 4
+```
+we got positive slack in sta analysis.
+
+
+
+
+### Clock tree synthesis
+
+The goal of constructing a clock tree is to make sure that the clock input reaches all the elements and that there is no clock skew. The H-tree is one of the most used methods in CTS. If you have ever tried to reduce slack in a previous run, you may have noticed that the netlist has been changed by cell replacement techniques. Before trying to run a CTS in tritoncts tool.
+
+The goal of the Clock Tree Synthesis is to reduce the routing resources of the clock signal, reduce the area of the clock repeaters, while maintaining a reasonable clock skew, reasonable clock latency, reasonable clock transition time, minimum Pulse Width, and duty cycle requirements for all the sequence elements in the design, and reasonable clock power within the spec. Clock Skew refers to the difference in the clock arrival time between two registers
+
+Here is an example of bad tree
+
+![bad_tree](./Images/bad_tree.png)
+
+
+### Cross talk & cross net shielding
+
+Crosstalk noise is noise generated on the clock network by aggressor nets surrounding the clock signal. This noise can delay or make the clock signal faster or even cause spurious transitions known as glitches. To maintain the signal integrity of the clock signal, physical designers protect the clock wires using a power net. They may also use NDR rules that route the clock signal by leaving one empty track next to the clock route. This helps to reduce the impact of noise on the clock network. The function of the clock signal is to control and synchronize trigger events within a synchronous design. Therefore, maintaining the signal integrity is essential to meet your design functional specification.
+
+![glitch](./Images/glitch.png)
+
+
+### Clock tree synthesis lab
+
+We following command to run CTS in openlane:
+```
+run_cts
+```
+
+
+
 </details>
 
 
@@ -620,5 +682,11 @@ https://vsdiat.com/
 https://github.com/Devipriya1921/Physical_Design_Using_OpenLANE_Sky130
 
 https://github.com/nickson-jose/vsdstdcelldesign
+
+https://www.edn.com/understanding-the-basics-of-setup-and-hold-time/
+
+https://vlsi.pro/clock-jitter/
+
+https://anysilicon.com/clock-tree-synthesis/
 
 </details>
