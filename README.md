@@ -771,6 +771,12 @@ Running routing step in TritonRoute as part of openLANE flow:
 run_routing
 ```
 
+Finally, we can use 
+```
+./flow.tcl -design picorv32a
+```
+to run the entire flow without interaction.
+
 
 
 </details>
