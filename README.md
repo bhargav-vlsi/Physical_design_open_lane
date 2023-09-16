@@ -690,12 +690,6 @@ We can see that slack constraints are met.
 <details>
 <summary>DAY-5</summary>
 
-### Routing
-
-Routing is the process of physically connecting signal pins using metal layers. Following CTS and optimisation, routing is the phase in which precise connections between standard cells, macros, and I/O pins are made. The logical connections provided in the netlist are used to determine the creation of electrical connections in the layout utilising metals and vias. 
-
-![routing](./Images/routing.png)
-
 ### General Lee's Maze routing algorithm
 
 ![maze_algorithm](./Images/maze_algorithm.png)
@@ -742,7 +736,42 @@ Different net Via cut spacing
 
 Less than min edge length
 
-### 
+### Power Distribution Network generation
+
+Power Distribution Network generation is not a component of the floorplan run in OpenLANE, in contrast to the typical ASIC flow. After the CTS and post-CTS STA analyses, PDN must be prepared.
+
+We use following command for power distribution network generation ie power and GND rails.
+```
+gen_pdn
+```
+
+![pdn](./Images/pdn.png)
+
+gen_pdn – Generate a power distribution network
+The power distribution network must use design_cts.def as the input def file. This creates a grid and band for Vdd and floor. These are placed around the standard cell. A standard cell is designed so that its height is a multiple of the distance between its Vdd and ground bar. The slope here is 2.72. Power can be supplied to standard cells only if the above conditions are met. The chip is powered via a power connection. There is one for Vdd and one for Gnd
+Current flows from the pad to the ring through the through hole.
+The strap is connected to the ring. The Vdd band is connected to the Vdd ring and the Gnd band is connected to the Gnd ring. Has horizontal and vertical support
+Now we need to supply power from the tape to the standard cell. Straps are connected to standard cell rails
+If a macro is present, the strap is attached to the macro's ring via the macro pad and her PDN for the macro is pre-created. Straps and rails have definitions. In this design, the tabs are on metal layers 4 and 5, and the standard cell bars are on metal layer 1. Connect layers with vias as needed.
+
+### Routing
+
+Routing is the process of physically connecting signal pins using metal layers. Following CTS and optimisation, routing is the phase in which precise connections between standard cells, macros, and I/O pins are made. The logical connections provided in the netlist are used to determine the creation of electrical connections in the layout utilising metals and vias. 
+
+![routing](./Images/routing.png)
+
+OpenLANE uses the TritonRoute tool for routing. There are 2 stages of routing:
+
+1. Global routing: Routing region is divided into rectangle grids which are represented as course 3D routes (Fastroute tool).
+
+2. Detailed routing: Finer grids and routing guides used to implement physical wiring (TritonRoute tool).
+
+Running routing step in TritonRoute as part of openLANE flow:
+```
+run_routing
+```
+
+
 
 </details>
 
