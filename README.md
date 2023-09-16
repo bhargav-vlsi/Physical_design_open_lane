@@ -660,9 +660,30 @@ Crosstalk noise is noise generated on the clock network by aggressor nets surrou
 We following command to run CTS in openlane:
 ```
 run_cts
+write_verilog ./designs/picorv32a/picorv32a_cts.v
 ```
 
+Since clock buffers are added during the CTS run, buffer delays are now a factor, and real clocks will be used for the remainder of our research. Now, setup and hold time slacks may be examined in OpenROAD's post-CTS STA analysis for the openLANE flow:
 
+open openroad tool using following in openlane command prompt.
+```
+openroad
+```
+
+![openroad](./Images/openroad.png)
+
+```
+read_lef ./designs/picorv32a/runs/RUN_2023.09.15_09.02.59/tmp/merged.nom.lef 
+read_def ./designs/picorv32a/runs/RUN_2023.09.15_09.02.59/results/cts/picorv32a.def
+write_db ./designs/picorv32a/picorv32a.db
+read_verilog ./designs/picorv32a/picorv32a_cts.v
+read_liberty $::env(LIB_SYNTH_COMPLETE)
+read_sdc ./designs/picorv32a/runs/RUN_2023.09.15_09.02.59/results/cts/picorv32a.sdc
+report_checks -path_delay min_max -format full_clock_expanded -digits 4
+```
+
+We can see that slack constraints are met.
+![cts_slack_met](./Images/cts_slack_met.png)
 
 </details>
 
