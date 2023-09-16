@@ -687,7 +687,64 @@ We can see that slack constraints are met.
 
 </details>
 
+<details>
+<summary>DAY-5</summary>
 
+### Routing
+
+Routing is the process of physically connecting signal pins using metal layers. Following CTS and optimisation, routing is the phase in which precise connections between standard cells, macros, and I/O pins are made. The logical connections provided in the netlist are used to determine the creation of electrical connections in the layout utilising metals and vias. 
+
+![routing](./Images/routing.png)
+
+### General Lee's Maze routing algorithm
+
+![maze_algorithm](./Images/maze_algorithm.png)
+
+1. Create an empty queue to hold the matrix's coordinates, and initialise it so that the source cell is marked as visited by having a distance from the source of 0 in the queue.
+
+2. Start the BFS procedure by calling the source cell.
+
+3. Set all the values in a boolean array to false and initialise it to have the same size as the input matrix. This is used to keep track of whether a coordinate has been visited.
+
+4. Continue iterating until the queue is empty. Front cell to be released from the queue. If the target cell is reached, return. Otherwise, enqueue the cells and mark them as visited for each of the four cells that are immediately surrounding the current cell and have a cell value of 1
+
+5. Return false if the destination is not reached after all queue elements have been processed.
+
+### Design Rule check
+
+A physical design technique called Design Rule Checking (DRC) is used to check whether a chip layout complies with a number of requirements set out by the semiconductor manufacturer. Each semiconductor manufacturing process will have its own set of guidelines and margins to ensure that normal manufacturing variability won't lead to chip failure.
+
+Few types of DRCs:
+
+Minimum width and spacing for metal
+
+Minimum width and spacing for via
+
+Fat wire Via keep out Enclosure
+
+End of Line spacing
+
+Minimum area
+
+Over Max stack level
+
+Wide metal jog
+
+Misaligned Via wire
+
+Different net spacing
+
+Special notch spacing
+
+Shorts violation
+
+Different net Via cut spacing
+
+Less than min edge length
+
+### 
+
+</details>
 
 <details>
 <summary>References</summary>
@@ -709,5 +766,13 @@ https://www.edn.com/understanding-the-basics-of-setup-and-hold-time/
 https://vlsi.pro/clock-jitter/
 
 https://anysilicon.com/clock-tree-synthesis/
+
+https://www.codesdope.com/blog/article/lee-algorithm/
+
+https://vlsi-backend-adventure.com/routing.html
+
+https://semiengineering.com/knowledge_centers/eda-design/verification/design-rule-checking-drc/
+
+https://www.design-reuse.com/articles/41504/design-rule-checks-drc-a-practical-view-for-28nm-technology.html
 
 </details>
